@@ -202,77 +202,19 @@ function closeMenu() {
 
 
 
-// API ključevi
-let CLIENT_ID = '433626228277-lgh710lo95cv018s27v492d5hidgeq6c.apps.googleusercontent.com';
-let API_KEY = 'AIzaSyCZp5Oade81BTFXtcpesE1SNoHOcIGNlJ8';
-let SCOPES = 'https://www.googleapis.com/auth/gmail.send';
-// Inicijalizacija klijenta
 
-const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicijalizacija EmailJS
+    emailjs.init('Ee0Kc-qnbQuxx1sme');
 
-let tokenClient;
-let gapiInited = false;
-let gisInited = false;
+    // Dodavanje event listenera za dugme "Buy Now"
+    const buyNowButton = document.getElementById('popup-buy-now');
+    buyNowButton.addEventListener('click', sendEmail);
+});
 
-document.getElementById('authorize_button').style.visibility = 'hidden';
-document.getElementById('signout_button').style.visibility = 'hidden';
+function sendEmail(event) {
+    event.preventDefault(); // Sprečavanje podrazumevanog ponašanja dugmeta
 
-function gapiLoaded() {
-    gapi.load('client', initializeGapiClient);
-}
-
-async function initializeGapiClient() {
-    await gapi.client.init({
-        apiKey: API_KEY,
-        discoveryDocs: [DISCOVERY_DOC],
-    });
-    gapiInited = true;
-    maybeEnableButtons();
-}
-
-function gisLoaded() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: '', // defined later
-    });
-    gisInited = true;
-    maybeEnableButtons();
-}
-
-function maybeEnableButtons() {
-    if (gapiInited && gisInited) {
-        document.getElementById('authorize_button').style.visibility = 'visible';
-    }
-}
-
-function handleAuthClick() {
-    tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) {
-            throw (resp);
-        }
-        document.getElementById('signout_button').style.visibility = 'visible';
-        document.getElementById('authorize_button').innerText = 'Refresh';
-    };
-
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({prompt: 'consent'});
-    } else {
-        tokenClient.requestAccessToken({prompt: ''});
-    }
-}
-
-function handleSignoutClick() {
-    const token = gapi.client.getToken();
-    if (token !== null) {
-        google.accounts.oauth2.revoke(token.access_token);
-        gapi.client.setToken('');
-        document.getElementById('authorize_button').innerText = 'Authorize';
-        document.getElementById('signout_button').style.visibility = 'hidden';
-    }
-}
-
-function sendEmail() {
     const productTitle = document.getElementById('naslov').textContent;
     const productPrice = document.getElementById('cena').textContent;
     const sizeButtons = document.querySelectorAll('.size-btn');
@@ -288,48 +230,37 @@ function sendEmail() {
     const email = document.getElementById('popup-email').value;
     const address = document.getElementById('popup-address').value;
 
-    const headers = {
-        'To': 'vukasin.teslic@gmail.com',
-        'Subject': 'Order Details'
+    // Provera da li su svi podaci popunjeni
+    let missingFields = [];
+    if (!productTitle) missingFields.push('Product Title');
+    if (!productPrice) missingFields.push('Product Price');
+    if (!selectedSize) missingFields.push('Velicina');
+    if (!name) missingFields.push('Ime');
+    if (!phone) missingFields.push('Telefon');
+    if (!email) missingFields.push('Email');
+    if (!address) missingFields.push('Addresa');
+
+    if (missingFields.length > 0) {
+        alert('Nedostaje: ' + missingFields.join(', '));
+        return;
+    }
+
+    const templateParams = {
+        product_title: productTitle,
+        product_price: productPrice,
+        selected_size: selectedSize,
+        name: name,
+        phone: phone,
+        email: email,
+        address: address
     };
 
-    const emailLines = [];
-    emailLines.push('From: ' + gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail());
-    for (let header in headers) {
-        emailLines.push(header + ": " + headers[header]);
-    }
-    emailLines.push('');
-    emailLines.push('Product: ' + productTitle);
-    emailLines.push('Price: ' + productPrice);
-    emailLines.push('Size: ' + selectedSize);
-    emailLines.push('Name: ' + name);
-    emailLines.push('Phone: ' + phone);
-    emailLines.push('Email: ' + email);
-    emailLines.push('Address: ' + address);
-
-    const emailContent = emailLines.join('\r\n').trim();
-    const base64EncodedEmail = btoa(unescape(encodeURIComponent(emailContent))).replace(/\+/g, '-').replace(/\//g, '_');
-
-    gapi.client.gmail.users.messages.send({
-        'userId': 'me',
-        'resource': {
-            'raw': base64EncodedEmail
-        }
-    }).then(() => {
-        console.log('Email sent successfully');
-        alert('Vaša porudžbina je poslata.');
-    }).catch((error) => {
-        console.error('Error sending email', error);
-        alert('Greška pri slanju porudžbine.');
-    });
-}
-
-document.getElementById('popup-buy-now').addEventListener('click', () => {
-    if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
-        sendEmail();
-    } else {
-        gapi.auth2.getAuthInstance().signIn().then(sendEmail).catch((error) => {
-            console.error('Error during sign-in', error);
+    emailjs.send("service_y9h54vf","template_phihcqu", templateParams)
+        .then((response) => {
+            console.log('SUCCESS!', response.status, response.text);
+            alert('Vaša porudžbina je poslata.');
+        }, (error) => {
+            console.error('FAILED...', error);
+            alert('Greška pri slanju porudžbine.');
         });
-    }
-});
+}

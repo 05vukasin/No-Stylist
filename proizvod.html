@@ -6,6 +6,9 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>nostylistbelgrade</title>
+    <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+
+
 </head>
 <body>
     <section>
@@ -76,7 +79,7 @@
                     <input type="email" name="email" id="popup-email">
                     <p>Adresa</p>
                     <input type="text" name="address" id="popup-address">
-                    <button id="popup-buy-now" onclick="sendEmail()">Buy Now</button>
+                    <button id="popup-buy-now" onclick="closePopup()" onclick="sendEmail()">Buy Now</button>
                 </div>
             </div>
         </div>
